@@ -9,7 +9,7 @@
 		<version>3.2.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.ibayad.commons</groupId>
+	<groupId>com.blitzkrieglabs.commons</groupId>
 	<artifactId>commons-audit</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>commons-audit</name>
