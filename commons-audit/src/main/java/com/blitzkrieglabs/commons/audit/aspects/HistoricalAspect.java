@@ -4,7 +4,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +14,10 @@ import com.blitzkrieglabs.commons.audit.domains.Audit;
 import com.blitzkrieglabs.commons.audit.domains.Stateful;
 import com.blitzkrieglabs.commons.audit.repositories.AuditableRepository;
 import com.blitzkrieglabs.commons.audit.repositories.HistoricalRepository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.Table;
 
 @Aspect
@@ -23,6 +28,13 @@ public class HistoricalAspect {
     @Autowired
     private HistoricalRepository<Stateful, Long> historicalRepo;
     
+    @Qualifier("historicalEntityManager")
+    private final EntityManager historyEntityManager;
+
+    
+    public HistoricalAspect(@Qualifier("historicalEntityManager") EntityManager historyEntityManager) {
+        this.historyEntityManager = historyEntityManager;
+    }
     
 
     @Around("execution(* org.springframework.data.jpa.repository.JpaRepository+.save(..))")
@@ -55,10 +67,10 @@ public class HistoricalAspect {
              args[0] = statefulEntity;
              
              
-             joinPoint.proceed(args);
+             result = joinPoint.proceed(args);
              if(!HistoricalRepository.class.isAssignableFrom(joinPoint.getTarget().getClass())) {
-            	 statefulEntity.setId(null);
-                historicalRepo.save(statefulEntity);
+            	save(statefulEntity);
+                
              }
              Table annot = entity.getClass().getAnnotation(Table.class);
              if(annot!=null) {
@@ -68,9 +80,24 @@ public class HistoricalAspect {
              }	 
              
          }else {
-        	 joinPoint.proceed();
+        	result= joinPoint.proceed();
          }
          
          return result;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private <T extends Stateful> void save(T statefulEntity){
+        try{
+        	@SuppressWarnings("unchecked")
+			T historyEntity = (T) statefulEntity.getClass().getDeclaredConstructor().newInstance();
+        	
+        	BeanUtils.copyProperties(statefulEntity, historyEntity);
+        	//historyEntityManager.detach(statefulEntity);
+        	historyEntity.setId(null);
+            historicalRepo.save(historyEntity);
+        }catch(Exception e){
+            System.out.println("IGNORE: ");
+        }
     }
 }

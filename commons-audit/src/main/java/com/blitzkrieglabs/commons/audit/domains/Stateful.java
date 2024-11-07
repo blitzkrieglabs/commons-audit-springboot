@@ -39,7 +39,7 @@ public abstract class Stateful {
 	private Long id;
 	
 	@Column(name="public_id")
-	private String publicId;
+	private UUID publicId;
 	
 	@Column(name="reference_id")
 	private String referenceId; //to be used to track the most recent id used to create/update/delete the entity
@@ -57,7 +57,12 @@ public abstract class Stateful {
 	@PrePersist
 	@PreUpdate
 	void preInsert() {
-	   if (this.timestamp == null)
-	       this.timestamp = LocalDateTime.now();
+	   if (this.timestamp == null){
+			this.timestamp = LocalDateTime.now();
+	   }
+	   this.publicId = UUID.randomUUID();
+	    
+	
+	
 	}
 }

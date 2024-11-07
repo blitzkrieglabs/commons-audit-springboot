@@ -49,8 +49,9 @@ public class AuditableAspect {
         UUID referenceId = UUID.randomUUID();
         RequestContext.put("reference_id", referenceId);
 
+        String uri = getURI(joinPoint);
         // Get the request path
-        String path = request.getMethod() + " " + getURI(joinPoint);
+        String path = request.getMethod() + " " + (uri==null?auditable.name():uri);
         
         
         
@@ -102,8 +103,11 @@ public class AuditableAspect {
         	 Annotation annotation = method.getAnnotation(clazz);
         	 Method valueMethod = annotation.annotationType().getDeclaredMethod("value");
              Object value = valueMethod.invoke(annotation);
-             if(value instanceof String[])
-            	 return  ((String[])value)[0];
+             if(value!=null && value instanceof String[]){
+                String[] ret = (String[])value;
+                return ret.length>0? ret[0]:null;
+             }
+            	
          }
          
          return null;

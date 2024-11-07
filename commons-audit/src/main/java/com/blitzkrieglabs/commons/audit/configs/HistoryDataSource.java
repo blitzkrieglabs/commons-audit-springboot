@@ -13,6 +13,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class HistoryDataSource {
     @Value("${history.datasource.driver-class-name}")
     private String driverClassName;
     
-    @Value("history.datasource.packages")
+    @Value("${history.datasource.packages}")
     private String[] auditablePackage;
 	    
 
@@ -67,6 +68,12 @@ public class HistoryDataSource {
             EntityManagerFactoryBuilder builder,
             @Qualifier("historicalDataSource") DataSource dataSource,
             Environment env) {
+
+        System.out.println("loading auditable packages: ");
+        for(String p: auditablePackage){
+            System.out.println("PACKAGE:" + p);
+
+        }
         return builder
                 .dataSource(dataSource)
                 .packages(auditablePackage) // package containing your audit entities
@@ -86,5 +93,12 @@ public class HistoryDataSource {
         properties.put("hibernate.dialect", env.getProperty(prefix + ".jpa.database-platform"));
         properties.put("hibernate.hbm2ddl.auto", env.getProperty(prefix + ".datasource.hibernate.ddl-auto"));
         return properties;
+    }
+    
+    
+    @Bean(name = "historicalEntityManager")
+    public EntityManager historicalEntityManager(
+            @Qualifier("historicalEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+        return entityManagerFactory.createEntityManager();
     }
 }
